@@ -13,13 +13,7 @@ export default function App() {
     inputRef.current.focus();
   }, []);
   useEffect(() => {});
-  // const [chatLog2, setChatLog2] = useState(() => {
 
-  //   const stored = localStorage.getItem("entry2");
-
-  //   return stored ? JSON.parse(stored) : [];
-
-  // });
 
   const [chatLog, setChatLog] = useState(() => {
     const stored = localStorage.getItem("entry");
@@ -33,12 +27,7 @@ export default function App() {
       return newChatlog;
     });
   }
-  // const blockCounter = useRef(chatLog.length > 0 ? chatLog.length + 1 : 1);
-
-  // useEffect(() => {
-  //   blockCounter.current += 1;
-  // }, [chatLog]);
-
+ 
   const chatContainerRef = useRef(null);
 
   const handleSubmit = async (e) => {
@@ -51,9 +40,7 @@ export default function App() {
 
       const response = res.data.response;
 
-      // const match = systemData.find((entry) => entry.requestIs === value);
-
-      // const response = match ? match.responseIs : "I don't understand";
+      
 
       setChatLog((prevLog) => {
         const newLog = { ...prevLog };
@@ -69,13 +56,6 @@ export default function App() {
         }
         return newLog;
       });
-
-      // case "2":
-      //   setChatLog2((prevLog) => [
-      //     ...prevLog /*spread */,
-      //     { request: value, response: response },
-      //   ]);
-      //   break;
 
       setvalue("");
     } catch (error) {
