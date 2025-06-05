@@ -3,31 +3,36 @@ import "./App.css";
 import "./SideNav.css";
 import SideNav from "./SideNav";
 import axios from "axios";
+
 export default function App() {
   const [value, setvalue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef(null);
   const [currentChat, setCurrentChat] = useState("1");
+  const [chatTitles, setChatTitles] = useState({});
   const bottomRef = useRef(null);
   useEffect(() => {
     inputRef.current.focus();
   }, []);
   useEffect(() => {});
 
-
-  const [chatLog, setChatLog] = useState(() => {
-    const stored = localStorage.getItem("entry");
-    return stored ? JSON.parse(stored) : {};
-  });
+  const [chatLog, setChatLog] = useState({});
   function handleDeleteChatContent(chatIdToDelete) {
-    setChatLog((prevchatlog) => {
-      const newChatlog = { ...prevchatlog };
-      delete newChatlog[chatIdToDelete];
-      console.log(newChatlog);
-      return newChatlog;
-    });
+    axios
+      .delete(`http://localhost:8080/chat/${chatIdToDelete}`)
+      .then(() => {
+        setChatLog((prevchatLog) => {
+          console.log("prevChatslog:", prevchatLog);
+          const newchatLog = { ...prevchatLog };
+          delete newchatLog[chatIdToDelete];
+          return newchatLog;
+        });
+      })
+      .catch((error) => {
+        console.error("FAILED TO DELETE CHAT ", error);
+      });
   }
- 
+
   const chatContainerRef = useRef(null);
 
   const handleSubmit = async (e) => {
@@ -36,11 +41,10 @@ export default function App() {
     try {
       const res = await axios.post("http://localhost:8080/chat", {
         request: value,
+        session_id: currentChat,
       });
 
       const response = res.data.response;
-
-      
 
       setChatLog((prevLog) => {
         const newLog = { ...prevLog };
@@ -58,14 +62,19 @@ export default function App() {
       });
 
       setvalue("");
+      const titleRes = await axios.get(
+        `http://localhost:8080/chat-title/${currentChat}`
+      );
+      const title = titleRes.data.title;
+      setChatTitles((prev) => ({ ...prev, [currentChat]: title }));
     } catch (error) {
       console.log("Error communicating with server", error);
     }
   };
 
-  useEffect(() => {
-    localStorage.setItem("entry", JSON.stringify(chatLog));
-  }, [chatLog]);
+  // useEffect(() => {
+  //   localStorage.setItem("entry", JSON.stringify(chatLog));
+  // }, [chatLog]); no need beacuse now the server keeps the data
 
   // useEffect(() => {
   //   if (chatContainerRef.current) {
@@ -79,6 +88,24 @@ export default function App() {
       bottomRef.current.scrollIntoView({ behavior: "smooth" });
     }
   }, [chatLog]);
+  useEffect(() => {
+    async function fetchChat() {
+      try {
+        const res = await axios.get(
+          `http://localhost:8080/chat/${currentChat}`
+        );
+        setChatLog((prev) => ({
+          ...prev,
+          [currentChat]: res.data,
+        }));
+      } catch (error) {
+        console.error("Failed to fetch chat history:", error);
+      }
+    }
+
+    fetchChat();
+  }, [currentChat]);
+
   return (
     <>
       <div id="main">
@@ -88,6 +115,10 @@ export default function App() {
           setCurrentChat={setCurrentChat}
           currentChat={currentChat}
           handleDeleteChatContent={handleDeleteChatContent}
+          chatLog={chatLog}
+          setChatLog={setChatLog}
+          chatTitles={chatTitles}
+          setChatTitles={setChatTitles}
         />
         <div className="fullscreen">
           <div className="chatbody">
@@ -120,7 +151,7 @@ export default function App() {
                     id="request"
                     value={value}
                     onChange={(e) => setvalue(e.target.value)}
-                    autoComplete={false}
+                    autoComplete="off"
                     ref={inputRef}
                   />
                   <button
