@@ -106,3 +106,40 @@ body {
   flex-direction: column;
   height: 100vh;
 }
+
+.emtpychatcontainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  padding: 30px 10px;
+  background-color: #343541;
+  backdrop-filter: blur(10px);
+  animation: fadeIn 1s ease-in-out;
+}
+
+.empty-chat-message {
+  text-align: center;
+  color: #cfcfcf;
+  font-size: 1.3rem;
+  font-weight: 500;
+  font-style: italic;
+  padding: 30px 40px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+  max-width: 80%;
+  transition: transform 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -2,23 +2,27 @@ import { useEffect, useRef, useState } from "react";
 import "./App.css";
 import "./SideNav.css";
 import SideNav from "./SideNav";
-import axios from "axios";
-
+import axiosInstance from "./api/axiosInstance";
+import LoginPage from "./LoginPage";
+import { useAuth } from "./context/AuthContext";
 export default function App() {
   const [value, setvalue] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const inputRef = useRef(null);
-  const [currentChat, setCurrentChat] = useState("1");
+  const [currentChat, setCurrentChat] = useState("");
   const [chatTitles, setChatTitles] = useState({});
   const bottomRef = useRef(null);
-  useEffect(() => {
-    inputRef.current.focus();
-  }, []);
-  useEffect(() => {});
-
   const [chatLog, setChatLog] = useState({});
+  const { auth } = useAuth(); //accessing the token
+
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, []);
+
   function handleDeleteChatContent(chatIdToDelete) {
-    axios
+    axiosInstance
       .delete(`http://localhost:8080/chat/${chatIdToDelete}`)
       .then(() => {
         setChatLog((prevchatLog) => {
@@ -33,13 +37,11 @@ export default function App() {
       });
   }
 
-  const chatContainerRef = useRef(null);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-      const res = await axios.post("http://localhost:8080/chat", {
+      const res = await axiosInstance.post("http://localhost:8080/chat", {
         request: value,
         session_id: currentChat,
       });
@@ -62,7 +64,7 @@ export default function App() {
       });
 
       setvalue("");
-      const titleRes = await axios.get(
+      const titleRes = await axiosInstance.get(
         `http://localhost:8080/chat-title/${currentChat}`
       );
       const title = titleRes.data.title;
@@ -90,22 +92,43 @@ export default function App() {
   }, [chatLog]);
   useEffect(() => {
     async function fetchChat() {
-      try {
-        const res = await axios.get(
-          `http://localhost:8080/chat/${currentChat}`
-        );
-        setChatLog((prev) => ({
-          ...prev,
-          [currentChat]: res.data,
-        }));
-      } catch (error) {
-        console.error("Failed to fetch chat history:", error);
+      if (!currentChat) {
+        try {
+          const res = await axiosInstance.get(`http://localhost:8080/chat`);
+          if (res.data && res.data.length > 0) {
+            const replacedSessionId = res.data[0].session_id;
+            console.log("The new assigned session_id:", replacedSessionId);
+
+            setCurrentChat(replacedSessionId);
+          }
+        } catch (error) {
+          console.error("Failed get a new replaced id session :", error);
+        }
+      } else {
+        try {
+          //console.log("current chat :", currentChat);
+          const res = await axiosInstance.get(
+            `http://localhost:8080/chat/${currentChat}`
+          );
+          console.log("response is ", res.data);
+
+          setChatLog((prev) => ({
+            ...prev,
+            [currentChat]: res.data,
+          }));
+          console.log("chatlog =", chatLog);
+        } catch (error) {
+          console.error("Failed to fetch chat history:", error);
+        }
       }
     }
 
     fetchChat();
   }, [currentChat]);
 
+  if (!auth) {
+    return <LoginPage />;
+  }
   return (
     <>
       <div id="main">
@@ -136,9 +159,11 @@ export default function App() {
                   </div>
                 ))
               ) : (
-                <p className="empty-chat-message">
-                  This chat is empty. Start a conversation!
-                </p>
+                <div className="emtpychatcontainer">
+                  <p className="empty-chat-message">
+                    This chat is empty. Start a conversation!
+                  </p>
+                </div>
               )}
             </div>
             <div className="formcontainer">

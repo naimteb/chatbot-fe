@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import axiosInstance from "./api/axiosInstance";
+import { useAuth } from "./context/AuthContext";
+
 export default function SideNav({
   setIsOpen,
   isOpen,
@@ -11,6 +13,8 @@ export default function SideNav({
   chatTitles,
   setChatTitles,
 }) {
+  const { logout } = useAuth();
+
   // const [nextId, setNextId] = useState(1);
   const [chatsbtnIndex, setNewChatsbtnIndex] = useState([]);
   // const [availableIds, setAvailableIds] = useState([]);
@@ -27,7 +31,7 @@ export default function SideNav({
   const handleAddChat = async () => {
     setLoading(true);
     try {
-      const res = await axios.post("http://localhost:8080/new-chat");
+      const res = await axiosInstance.post("http://localhost:8080/new-chat");
       if (res.data && res.data.chatId) {
         const newId = res.data.chatId.toString();
         setChatLog((prev) => ({ ...prev, [newId]: [] }));
@@ -48,9 +52,16 @@ export default function SideNav({
 
   const handleDeleteChat = async (chatIdToDelete) => {
     try {
-      await axios.delete(`http://localhost:8080/chat/${chatIdToDelete}`);
+      await axiosInstance.delete(
+        `http://localhost:8080/chat/${chatIdToDelete}`
+      );
       handleDeleteChatContent(chatIdToDelete); // clean Redux / parent
       setChatLog((prev) => {
+        const next = { ...prev };
+        delete next[chatIdToDelete];
+        return next;
+      });
+      setChatTitles((prev) => {
         const next = { ...prev };
         delete next[chatIdToDelete];
         return next;
@@ -68,10 +79,10 @@ export default function SideNav({
     const fetchAllTitles = async () => {
       const ids = Object.keys(chatLog || {});
       for (const id of ids) {
-        console.log(chatTitles[id]);
+        console.log("chat title id ", chatTitles[id]);
         if (!chatTitles[id]) {
           try {
-            const res = await axios.get(
+            const res = await axiosInstance.get(
               `http://localhost:8080/chat-title/${id}`
             );
             const title = res.data.title;
@@ -88,8 +99,26 @@ export default function SideNav({
     };
 
     fetchAllTitles();
-  }, [chatLog]);
+  }, [chatLog, chatTitles]);
 
+  useEffect(() => {
+    const fetchPrevTitles = async () => {
+      try {
+        const result = await axiosInstance.get(
+          `http://localhost:8080/new-chat`
+        );
+        // console.log("result is ", result.data);
+
+        const titlesArray = result.data;
+        const titleMap = {};
+        titlesArray.forEach(({ chat_session_id, title }) => {
+          titleMap[chat_session_id] = title;
+        });
+        setChatTitles(titleMap);
+      } catch (error) {}
+    };
+    fetchPrevTitles();
+  }, []);
   return (
     <>
       <button
@@ -111,8 +140,10 @@ export default function SideNav({
         </div>
 
         <div className="navlinks">
-          {console.log("nav links indexes : ", Object.keys(chatLog || {}))}
-          {Object.keys(chatLog || {}).map((chatId) => (
+          {
+            //console.log("nav links indexes : ", Object.keys(chatLog || {}))
+          }
+          {Object.keys(chatTitles || {}).map((chatId) => (
             <div key={chatId} className="chatlink-wrapper">
               <button
                 className="chatlink"
@@ -125,13 +156,18 @@ export default function SideNav({
               </button>
               <button
                 className="deletechat-btn"
-                onClick={() => handleDeleteChat(chatId)}
+                onClick={() => {
+                  handleDeleteChat(chatId);
+                }}
               >
                 🗑️
               </button>
             </div>
           ))}
         </div>
+        <button onClick={logout} className="logout-btn">
+          Logout
+        </button>
       </div>
     </>
   );
