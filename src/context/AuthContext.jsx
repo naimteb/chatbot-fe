@@ -11,8 +11,10 @@ export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => {
     const accessToken = localStorage.getItem("accessToken");
     const refreshToken = localStorage.getItem("refreshToken");
+
     return accessToken && refreshToken ? { accessToken, refreshToken } : null;
   });
+  const [username, setUsername] = useState("");
 
   const login = (accessToken, refreshToken) => {
     localStorage.setItem("accessToken", accessToken);
@@ -27,7 +29,9 @@ export function AuthProvider({ children }) {
   };
 
   return (
-    <AuthContext.Provider value={{ auth, login, logout }}>
+    <AuthContext.Provider
+      value={{ auth, login, logout, username, setUsername }}
+    >
       {" "}
       {/*global props  */}
       {children}

@@ -41,36 +41,51 @@ export default function App() {
     e.preventDefault();
 
     try {
+      let activeSessionId = currentChat;
+
+      if (!activeSessionId) {
+        const sessionRes = await axiosInstance.post(
+          "http://localhost:8080/chat/create-session"
+        );
+        activeSessionId = sessionRes.data.session_id;
+        console.log(" New session created:", activeSessionId);
+        setCurrentChat(activeSessionId); // this updates UI
+      }
+
       const res = await axiosInstance.post("http://localhost:8080/chat", {
         request: value,
-        session_id: currentChat,
+        session_id: activeSessionId,
       });
 
       const response = res.data.response;
 
-      setChatLog((prevLog) => {
-        const newLog = { ...prevLog };
-        if (!newLog[currentChat]) {
-          newLog[currentChat] = [{ request: value, response: response }]; // Create a new block at this index
-        } else {
-          // Append to existing block
-
-          newLog[currentChat] = [
-            ...newLog[currentChat],
-            { request: value, response: response },
-          ];
-        }
-        return newLog;
-      });
-
+      // setChatLog((prevLog) => {
+      //   const newLog = { ...prevLog };
+      //   if (!newLog[activeSessionId]) {
+      //     newLog[activeSessionId] = [{ request: value, response }];
+      //   } else {
+      //     newLog[activeSessionId] = [
+      //       ...newLog[activeSessionId],
+      //       { request: value, response },
+      //     ];
+      //   }
+      //   return newLog;
+      // });
+      const updatedChatRes = await axiosInstance.get(
+        `http://localhost:8080/chat/${activeSessionId}`
+      );
+      setChatLog((prev) => ({
+        ...prev,
+        [activeSessionId]: updatedChatRes.data,
+      }));
       setvalue("");
       const titleRes = await axiosInstance.get(
-        `http://localhost:8080/chat-title/${currentChat}`
+        `http://localhost:8080/chat-title/${activeSessionId}`
       );
       const title = titleRes.data.title;
-      setChatTitles((prev) => ({ ...prev, [currentChat]: title }));
+      setChatTitles((prev) => ({ ...prev, [activeSessionId]: title }));
     } catch (error) {
-      console.log("Error communicating with server", error);
+      console.log(" Error during submission:", error);
     }
   };
 

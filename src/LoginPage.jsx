@@ -4,26 +4,32 @@ import { useAuth } from "./context/AuthContext";
 import "./loginPage.css";
 
 export default function LoginPage() {
-  const { login } = useAuth(); //get the  login function from AuthContext
-  const [username, setUsername] = useState("");
+  const { login, username, setUsername } = useAuth();
   const [password, setPassword] = useState("");
-  const { auth } = useAuth(); //accessing the token
+  const [errorMessage, setErrorMessage] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setErrorMessage("");
+
     try {
       const res = await axiosInstance.post("/login", {
         username,
         password,
       });
-      console.log("token :", res);
+
       const accessToken = res.data.accessToken;
       const refreshToken = res.data.refreshToken;
-      //  login(accessToken); // Save token in global state + localStorage
 
       login(accessToken, refreshToken);
     } catch (error) {
       console.error("Login failed:", error);
+
+      if (error.response && error.response.data?.message) {
+        setErrorMessage(error.response.data.message); // backend-provided message
+      } else {
+        setErrorMessage("Login failed. Please try again.");
+      }
     }
   };
 
@@ -31,6 +37,9 @@ export default function LoginPage() {
     <div className="login-container">
       <form onSubmit={handleLogin} className="login-form">
         <h2>Login</h2>
+
+        {errorMessage && <div className="error-message">{errorMessage}</div>}
+
         <input
           type="text"
           placeholder="Username"

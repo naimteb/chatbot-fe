@@ -14,7 +14,7 @@ export default function SideNav({
   setChatTitles,
 }) {
   const { logout } = useAuth();
-
+  const { username } = useAuth();
   // const [nextId, setNextId] = useState(1);
   const [chatsbtnIndex, setNewChatsbtnIndex] = useState([]);
   // const [availableIds, setAvailableIds] = useState([]);
@@ -138,7 +138,7 @@ export default function SideNav({
             {loading ? "creating..." : "new chat"}
           </button>
         </div>
-
+        <div className="userName">WELCOME {username} </div>
         <div className="navlinks">
           {
             //console.log("nav links indexes : ", Object.keys(chatLog || {}))
@@ -146,7 +146,9 @@ export default function SideNav({
           {Object.keys(chatTitles || {}).map((chatId) => (
             <div key={chatId} className="chatlink-wrapper">
               <button
-                className="chatlink"
+                className={`chatlink ${
+                  currentChat === chatId ? "active-chat" : ""
+                }`}
                 id={`chatlink-${chatId}`}
                 onClick={() => {
                   setCurrentChat(chatId), handleChatClick(chatId);
